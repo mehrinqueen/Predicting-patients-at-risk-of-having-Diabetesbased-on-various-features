@@ -1,0 +1,95 @@
+import pandas as pd
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import metrics 
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import MinMaxScaler 
+from sklearn.ensemble import AdaBoostClassifier 
+from sklearn.ensemble import BaggingClassifier
+from sklearn import model_selection
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+
+# Reading csv file
+df_diabetes = pd.read_csv("D:/STUDY/SEMESTER5/Machine Learning/Codes/diabetes.csv")
+
+# Finding missing value
+print(df_diabetes.isnull().sum())
+
+# Finding duplication
+print(df_diabetes.duplicated().sum())
+
+df_diabetes['Age'] = df_diabetes['Age'].astype(int)
+#df_diabetes['Age'] = df_diabetes.apply (lambda data: label_Age(data), axis=1)
+
+print(df_diabetes)
+
+x, y = df_diabetes.iloc[:, 0:-1], df_diabetes.iloc[:, [-1]]
+print(x)
+print(y)
+
+# Splitting training and testing data
+x_train, x_test, y_train, y_test = train_test_split(x,y,test_size = 0.2)
+print(x_train)
+print(y_train)
+print(x_test)
+print(y_test)
+
+# Algorithm
+# Creating Decision Tree classifer object
+model = DecisionTreeClassifier()
+
+# Training Decision Tree Classifer
+model = model.fit(x_train,y_train.values.reshape(-1,))
+
+#Predicting the response for test dataset
+y_pred = model.predict(x_test)
+
+# Evaluation part
+# Accuracy
+print("\n Accuracy applying Decision tree :",
+      metrics.accuracy_score(y_test, y_pred),"\n")
+
+values = df_diabetes.values
+
+# Imputing
+imputer = SimpleImputer()
+imputedData = imputer.fit_transform(values)
+scaler = MinMaxScaler(feature_range=(0, 1))
+DataNormalized = scaler.fit_transform(imputedData)
+
+# Segregating features from the labels
+X = DataNormalized[:,0:-1]
+Y = DataNormalized[:,-1]
+
+kfold = model_selection.KFold(n_splits=10, random_state=7)
+cartBagging = DecisionTreeClassifier()
+treeNumber = 100
+model = BaggingClassifier(base_estimator = cartBagging, 
+                          n_estimators = treeNumber, random_state=7)
+accuracyL = model_selection.cross_val_score(model, X, Y, cv=kfold)
+print("\nAccuracy applying Ensemble method (Bagging):", accuracyL.mean(),"\n")
+
+branch = 7
+treeNumber = 40
+kfold = model_selection.KFold(n_splits=18, random_state = branch)
+model = AdaBoostClassifier(n_estimators=treeNumber, random_state = branch)
+accuracyL = model_selection.cross_val_score(model, X, Y, cv=kfold)
+print("\nAccuracy applying Ensemble method (Boosting):", accuracyL.mean(), "\n")
+
+# prediction 
+print("\n Predicted values")
+print(y_pred)
+
+# confusion matrix
+confusion_matrix(y_test, y_pred)
+print("\n Confusion matrix:")
+cf_matrix = confusion_matrix(y_test, y_pred)
+print(cf_matrix)
+sns.heatmap(cf_matrix, annot=True)
+
+print("Accuracy:", metrics.accuracy_score(y_test,y_pred))
+
+print("\n Classification report:")
+print(classification_report(y_test, y_pred))
